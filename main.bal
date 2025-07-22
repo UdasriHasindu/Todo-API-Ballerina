@@ -2,11 +2,16 @@ import ballerina/http;
 
 listener http:Listener httpDefaultListener = http:getDefaultListener();
 
-type Todo record {
+type Todo record {|
     readonly int id;
     string title;
     boolean completed;
-};
+|};
+
+type NewTodo record {|
+    string title;
+    boolean completed;
+|};
 
 table<Todo> key(id) tasks = table [
     { id: 0, title: "Task 0: Participate Hackathon", completed: true},
@@ -45,4 +50,21 @@ service / on httpDefaultListener {
             return error("unhandled error", err);       
         }
     }
+
+    // create a new todo
+    resource function post todos(NewTodo newtodo) returns Todo|error|http:InternalServerError| http:Created {
+        do {
+            // create the new todo with generated id
+            int newId = tasks.length();
+            Todo newTodo = {id: newId, title: newtodo.title, completed: newtodo.completed};
+            
+            // add the new todo to the table
+            tasks.add(newTodo);
+            return newTodo;
+        } on fail error err {
+            // handle error
+            return error("unhandled error", err);
+        }
+
+     }
 }
