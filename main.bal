@@ -68,6 +68,28 @@ service / on httpDefaultListener {
 
     }
 
+    // put todo by id
+    resource function put todo/[int id](NewTodo newtodo) returns Todo|http:NotFound|http:InternalServerError {
+        do {
+            Todo? existingTodo = tasks.get(id);
+            if existingTodo is () {
+                return http:NOT_FOUND;
+            }
+
+            // Remove the existing todo first
+            _ = tasks.remove(id);
+            
+            // Create updated todo and add it back
+            Todo updatedTodo = {id: id, title: newtodo.title, completed: newtodo.completed};
+            tasks.add(updatedTodo);
+
+            return updatedTodo;
+        } on fail {
+            // handle error
+            return http:INTERNAL_SERVER_ERROR;
+        }
+    }
+
     // delete todo by id
     resource function delete todo/[int id]() returns http:NoContent|http:NotFound|http:InternalServerError {
         do {
@@ -86,6 +108,5 @@ service / on httpDefaultListener {
             return http:INTERNAL_SERVER_ERROR;
         }
     }
-
 
 }
