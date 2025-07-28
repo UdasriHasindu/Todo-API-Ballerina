@@ -14,18 +14,18 @@ type NewTodo record {|
 |};
 
 table<Todo> key(id) tasks = table [
-    { id: 0, title: "Task 0: Participate Hackathon", completed: true},
-    { id: 1, title: "Task 1: Learn Ballerina", completed: true },
-    { id: 2, title: "Task 2: Test Ballerina", completed: false },
-    { id: 3, title: "Task 3: Think new solutions to problems", completed: false },
-    { id: 4, title: "Task 4: Write Ballerina code", completed: false },
-    { id: 5, title: "Task 5: Deploy Ballerina application", completed: false }
+    {id: 0, title: "Task 0: Participate Hackathon", completed: true},
+    {id: 1, title: "Task 1: Learn Ballerina", completed: true},
+    {id: 2, title: "Task 2: Test Ballerina", completed: false},
+    {id: 3, title: "Task 3: Think new solutions to problems", completed: false},
+    {id: 4, title: "Task 4: Write Ballerina code", completed: false},
+    {id: 5, title: "Task 5: Deploy Ballerina application", completed: false}
 ];
 
 service / on httpDefaultListener {
 
     // get all todos
-    resource function get todos() returns error|json|http:InternalServerError| Todo[] {
+    resource function get todos() returns error|json|http:InternalServerError|Todo[] {
         do {
             return tasks.toArray();
 
@@ -36,28 +36,28 @@ service / on httpDefaultListener {
     }
 
     // get todo by id
-    resource function get todo/[int id]() returns Todo|error|http:InternalServerError{
+    resource function get todo/[int id]() returns Todo|error|http:InternalServerError {
 
         do {
             Todo? todo = tasks.get(id);
-                if todo is Todo{
-                    return todo;
-                } else{
-                    return error("Todo not found with id: " + id.toString());
-                }
+            if todo is Todo {
+                return todo;
+            } else {
+                return error("Todo not found with id: " + id.toString());
+            }
         } on fail error err {
             // handle error
-            return error("unhandled error", err);       
+            return error("unhandled error", err);
         }
     }
 
     // create a new todo
-    resource function post todos(NewTodo newtodo) returns Todo|error|http:InternalServerError| http:Created {
+    resource function post todo/[int id](NewTodo newtodo) returns Todo|error|http:InternalServerError|http:Created {
         do {
             // create the new todo with generated id
             int newId = tasks.length();
             Todo newTodo = {id: newId, title: newtodo.title, completed: newtodo.completed};
-            
+
             // add the new todo to the table
             tasks.add(newTodo);
             return newTodo;
@@ -66,5 +66,26 @@ service / on httpDefaultListener {
             return error("unhandled error", err);
         }
 
-     }
+    }
+
+    // delete todo by id
+    resource function delete todo/[int id]() returns http:NoContent|http:NotFound|http:InternalServerError {
+        do {
+            // Check if todo exists
+            Todo? existingTodo = tasks.get(id);
+            if existingTodo is () {
+                return http:NOT_FOUND;
+            }
+
+            // Remove the todo from the table
+            _ = tasks.remove(id);
+
+            return http:NO_CONTENT;
+        } on fail {
+            // handle error
+            return http:INTERNAL_SERVER_ERROR;
+        }
+    }
+
+
 }
